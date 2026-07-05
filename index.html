@@ -290,7 +290,7 @@ let db, auth;
 if (String(firebaseConfig.apiKey).includes("PASTE")) {
   renderNeedsConfig();
 } else {
-  const fbApp = initializeApp(firebaseConfig);
+  const fbApp = initFbApp(firebaseConfig);
   auth = getAuth(fbApp);
   db = getFirestore(fbApp);
   onAuthStateChanged(auth, async user => {
