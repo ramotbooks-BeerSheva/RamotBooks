@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>ספר עובר </title>
+<title>ספר עובר · מסירת ספרי קריאה בין הורים</title>
 <meta name="theme-color" content="#1B5E63">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -244,7 +244,17 @@
    הגדרה: הדביקו כאן את פרטי פרויקט ה-Firebase שלכם
    (Firebase Console → Project settings → Your apps → Config)
    ============================================================ */
-import { initializeApp as initFbApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+const firebaseConfig = {
+  apiKey: "PASTE_API_KEY",
+  authDomain: "PASTE_PROJECT.firebaseapp.com",
+  projectId: "PASTE_PROJECT_ID",
+  storageBucket: "PASTE_PROJECT.appspot.com",
+  messagingSenderId: "PASTE_SENDER_ID",
+  appId: "PASTE_APP_ID"
+};
+/* ============================================================ */
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect,
   onAuthStateChanged, signOut
@@ -254,15 +264,6 @@ import {
   query, where, onSnapshot, runTransaction, serverTimestamp, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyAIB3R8K-L_iJDL8HMj76H70JGyv0cID60",
-  authDomain: "ramotbooks-6d0bb.firebaseapp.com",
-  projectId: "ramotbooks-6d0bb",
-  storageBucket: "ramotbooks-6d0bb.firebasestorage.app",
-  messagingSenderId: "906451439651",
-  appId: "1:906451439651:web:d6da32529a81130e53a196"
-};
 const GRADES = ["א","ב","ג","ד","ה","ו"];
 const GRADE_COLORS = ["var(--g1)","var(--g2)","var(--g3)","var(--g4)","var(--g5)","var(--g6)"];
 
@@ -290,7 +291,7 @@ let db, auth;
 if (String(firebaseConfig.apiKey).includes("PASTE")) {
   renderNeedsConfig();
 } else {
-  const fbApp = initFbApp(firebaseConfig);
+  const fbApp = initializeApp(firebaseConfig);
   auth = getAuth(fbApp);
   db = getFirestore(fbApp);
   onAuthStateChanged(auth, async user => {
@@ -380,24 +381,34 @@ async function claimAdmin() {
 }
 
 async function addEntry(bookId, type) {
-  const entryRef = doc(collection(db, "entries"));
-  const batch = writeBatch(db);
-  batch.set(entryRef, {
-    uid: S.user.uid, bookId, type, status: "waiting",
-    matchId: null, createdAt: serverTimestamp()
-  });
-  batch.set(doc(db, "entries", entryRef.id, "private", "contact"),
-    { name: S.profile.name, phone: S.profile.phone });
-  await batch.commit();
-  closeModal();
-  toast(type === "offer" ? "נרשמת למסירת הספר ✓" : "נרשמת לקבלת הספר ✓");
-  setTimeout(attemptMatchingForMe, 800);
+  try {
+    const entryRef = doc(collection(db, "entries"));
+    // כתיבה בשני שלבים רצופים (לא batch אחד) - כדי שרישום ה-entry
+    // יתקיים בפועל לפני שחוקי האבטחה בודקים בעלות עליו בכתיבת פרטי הקשר.
+    await setDoc(entryRef, {
+      uid: S.user.uid, bookId, type, status: "waiting",
+      matchId: null, createdAt: serverTimestamp()
+    });
+    await setDoc(doc(db, "entries", entryRef.id, "private", "contact"),
+      { name: S.profile.name, phone: S.profile.phone });
+    closeModal();
+    toast(type === "offer" ? "נרשמת למסירת הספר ✓" : "נרשמת לקבלת הספר ✓");
+    setTimeout(attemptMatchingForMe, 800);
+  } catch (err) {
+    console.error("addEntry failed:", err);
+    toast("שגיאה בשמירת הרישום - נסו שוב, ואם זה חוזר דווחו לוועד ⚠️");
+  }
 }
 
 async function cancelEntry(entry) {
   if (!confirm("לבטל את הרישום הזה?")) return;
-  await deleteDoc(doc(db, "entries", entry.id));
-  toast("הרישום בוטל");
+  try {
+    await deleteDoc(doc(db, "entries", entry.id));
+    toast("הרישום בוטל");
+  } catch (err) {
+    console.error("cancelEntry failed:", err);
+    toast("שגיאה בביטול הרישום - נסו שוב ⚠️");
+  }
 }
 
 /* התאמה אוטומטית: הראשון בתור המוסרים פוגש את הראשון בתור המבקשים */
@@ -456,21 +467,26 @@ async function loadMatchContacts() {
 }
 
 async function confirmHandover(m) {
-  const amOffer = m.offerUid === S.user.uid;
-  const myField = amOffer ? "offerConfirmed" : "requestConfirmed";
-  await runTransaction(db, async tx => {
-    const snap = await tx.get(doc(db, "matches", m.id));
-    const d = snap.data();
-    const upd = { [myField]: true };
-    const otherConfirmed = amOffer ? d.requestConfirmed : d.offerConfirmed;
-    if (otherConfirmed) {
-      upd.status = "done"; upd.doneAt = serverTimestamp();
-      tx.update(doc(db, "entries", d.offerEntryId), { status: "done" });
-      tx.update(doc(db, "entries", d.requestEntryId), { status: "done" });
-    }
-    tx.update(doc(db, "matches", m.id), upd);
-  });
-  toast("תודה! עודכן ✓");
+  try {
+    const amOffer = m.offerUid === S.user.uid;
+    const myField = amOffer ? "offerConfirmed" : "requestConfirmed";
+    await runTransaction(db, async tx => {
+      const snap = await tx.get(doc(db, "matches", m.id));
+      const d = snap.data();
+      const upd = { [myField]: true };
+      const otherConfirmed = amOffer ? d.requestConfirmed : d.offerConfirmed;
+      if (otherConfirmed) {
+        upd.status = "done"; upd.doneAt = serverTimestamp();
+        tx.update(doc(db, "entries", d.offerEntryId), { status: "done" });
+        tx.update(doc(db, "entries", d.requestEntryId), { status: "done" });
+      }
+      tx.update(doc(db, "matches", m.id), upd);
+    });
+    toast("תודה! עודכן ✓");
+  } catch (err) {
+    console.error("confirmHandover failed:", err);
+    toast("שגיאה בעדכון - נסו שוב ⚠️");
+  }
 }
 
 async function cancelMatch(m, byAdmin = false) {
