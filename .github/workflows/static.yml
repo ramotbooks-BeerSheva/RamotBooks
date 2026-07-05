@@ -1,16 +1,44 @@
-steps:
+name: Deploy Static Content to Pages
+
+on:
+  # מפעיל את ה-Workflow בכל פעם שיש Push לענף ברירת המחדל (main או master)
+  push:
+    branches: ["main"]
+
+  # מאפשר להריץ את ה-Workflow ידנית מטאב Actions
+  workflow_dispatch:
+
+# הגדרת הרשאות ה-Token של GitHub Actions לצורך פריסה ל-Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# מונע הרצות מקבילות ומבטל הרצות קודמות שעדיין פעילות על אותו ענף
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps:deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ... כאן מופיעים הצעדים של בניית האתר (למשל הרצת ה-Script או בניית ה-HTML) ...
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
 
-      # 1. העלאת ה-Artifact (צריך להופיע רק פעם אחת!)
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.' # או התיקייה שבה נמצאים קבצי ה-HTML המוכנים שלך (למשל '_site' או 'dist')
+          # נקודה (.) פירושה שכל הקבצים בתיקייה הראשית של הריפוזיטורי יועלו.
+          # אם קבצי ה-HTML של הספר/אתר נמצאים בתיקייה ספציפית (למשל _site), שנו את '.' לשם התיקייה.
+          path: '.'
 
-      # 2. הפריסה עצמה (צריך להופיע רק פעם אחת!)
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
