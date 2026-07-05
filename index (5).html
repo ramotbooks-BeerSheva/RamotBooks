@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ספר עובר </title>
+<meta name="theme-color" content="#1B5E63">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F4EE;
+    --card:#FFFFFF;
+    --ink:#232B2F;
+    --muted:#6E7A7D;
+    --line:#E4E0D6;
+    --teal:#1B5E63;
+    --teal-dark:#12474B;
+    --teal-soft:#E3EEEE;
+    --accent:#F2C14E;
+    --danger:#B4462F;
+    --ok:#3E7C4F;
+    --g1:#D95D39; --g2:#DE9A2B; --g3:#2A9D8F; --g4:#3E6C9E; --g5:#7E6BAF; --g6:#5F8F4E;
+    --radius:14px;
+    --shadow:0 1px 3px rgba(35,43,47,.08), 0 6px 18px rgba(35,43,47,.06);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Assistant',system-ui,sans-serif;
+    font-size:16px;
+    line-height:1.55;
+    min-height:100dvh;
+  }
+  h1,h2,h3{font-family:'Frank Ruhl Libre',serif; margin:0; line-height:1.2;}
+  button{font-family:inherit; font-size:1rem; cursor:pointer; border:none; border-radius:10px;}
+  button:focus-visible, a:focus-visible, input:focus-visible{outline:3px solid var(--accent); outline-offset:2px;}
+  input, select{
+    font-family:inherit; font-size:1rem; padding:10px 12px;
+    border:1.5px solid var(--line); border-radius:10px; background:#fff; color:var(--ink); width:100%;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none!important; transition:none!important;}
+  }
+
+  /* ---------- מסגרת ---------- */
+  .wrap{max-width:760px; margin:0 auto; padding:0 16px 96px;}
+  header.app{
+    background:var(--teal); color:#fff;
+    padding:calc(14px + env(safe-area-inset-top)) 16px 14px;
+  }
+  header.app .inner{max-width:760px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:12px;}
+  .brand{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;}
+  .brand h1{font-size:1.45rem; font-weight:900; color:#fff;}
+  .brand .year{font-size:.85rem; opacity:.85;}
+  .avatar-btn{
+    background:rgba(255,255,255,.14); color:#fff; border:1.5px solid rgba(255,255,255,.35);
+    border-radius:999px; padding:6px 14px; font-weight:600; font-size:.9rem; white-space:nowrap;
+  }
+
+  nav.tabs{
+    position:fixed; bottom:0; right:0; left:0; z-index:40;
+    background:var(--card); border-top:1.5px solid var(--line);
+    display:flex; justify-content:center;
+    padding-bottom:env(safe-area-inset-bottom);
+    box-shadow:0 -4px 16px rgba(35,43,47,.07);
+  }
+  nav.tabs .inner{display:flex; width:100%; max-width:760px;}
+  nav.tabs button{
+    flex:1; background:none; padding:12px 4px 10px; border-radius:0;
+    color:var(--muted); font-weight:600; font-size:.92rem;
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    border-top:3px solid transparent;
+  }
+  nav.tabs button.active{color:var(--teal); border-top-color:var(--teal);}
+  nav.tabs .ico{font-size:1.25rem; line-height:1;}
+
+  main{padding-top:20px;}
+  .section-title{font-size:1.15rem; font-weight:700; margin:26px 0 12px; display:flex; align-items:center; gap:8px;}
+  .section-title .count{
+    font-family:'Assistant'; font-size:.8rem; font-weight:700; color:var(--teal);
+    background:var(--teal-soft); border-radius:999px; padding:2px 10px;
+  }
+  .empty{
+    color:var(--muted); background:var(--card); border:1.5px dashed var(--line);
+    border-radius:var(--radius); padding:22px 18px; text-align:center; font-size:.95rem;
+  }
+
+  /* ---------- כרטיסי ספרים (שדרה צבעונית) ---------- */
+  .grade-block{margin-bottom:8px;}
+  .grade-head{display:flex; align-items:center; gap:10px; margin:22px 0 10px;}
+  .grade-chip{
+    font-family:'Frank Ruhl Libre'; font-weight:900; color:#fff;
+    width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center;
+    font-size:1.15rem; flex-shrink:0;
+  }
+  .grade-head h3{font-size:1.05rem;}
+  .book-card{
+    background:var(--card); border:1.5px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); margin-bottom:12px; display:flex; overflow:hidden;
+  }
+  .book-card .spine{width:10px; flex-shrink:0;}
+  .book-card .body{padding:14px 14px 12px; flex:1; min-width:0;}
+  .book-card .title{font-weight:700; font-size:1.02rem; margin-bottom:2px;}
+  .book-card .meta{font-size:.85rem; color:var(--muted); display:flex; gap:14px; flex-wrap:wrap;}
+  .book-card .meta b{color:var(--ink);}
+  .book-card .actions{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
+  .btn{
+    padding:9px 16px; font-weight:700; border-radius:10px; font-size:.95rem;
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .btn-primary{background:var(--teal); color:#fff;}
+  .btn-primary:hover{background:var(--teal-dark);}
+  .btn-outline{background:#fff; color:var(--teal); border:1.5px solid var(--teal);}
+  .btn-outline:hover{background:var(--teal-soft);}
+  .btn-ghost{background:none; color:var(--muted); text-decoration:underline; padding:6px 8px; font-weight:600;}
+  .btn-danger-ghost{background:none; color:var(--danger); text-decoration:underline; padding:6px 8px; font-weight:600;}
+  .btn-wa{background:#3E7C4F; color:#fff;}
+  .btn[disabled]{opacity:.5; cursor:default;}
+  .badge-inactive{
+    background:#F3E2DC; color:var(--danger); font-size:.78rem; font-weight:700;
+    border-radius:999px; padding:2px 10px; margin-inline-start:8px;
+  }
+
+  /* ---------- הרישומים שלי ---------- */
+  .entry-card{
+    background:var(--card); border:1.5px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:14px 16px; margin-bottom:12px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  }
+  .entry-card .spine-dot{width:12px; height:44px; border-radius:6px; flex-shrink:0;}
+  .entry-card .info{flex:1; min-width:180px;}
+  .entry-card .t{font-weight:700;}
+  .entry-card .s{font-size:.88rem; color:var(--muted);}
+  .pos-badge{
+    background:var(--teal-soft); color:var(--teal); font-weight:700; font-size:.82rem;
+    border-radius:999px; padding:3px 12px; white-space:nowrap;
+  }
+  .type-tag{font-size:.8rem; font-weight:700; border-radius:6px; padding:1px 8px;}
+  .type-offer{background:#EAF3EC; color:var(--ok);}
+  .type-request{background:#EDEAF6; color:#5B4A8F;}
+
+  /* ---------- כרטיס ספרייה (התאמה) ---------- */
+  .lib-card{
+    position:relative; overflow:hidden;
+    border-radius:var(--radius); box-shadow:var(--shadow);
+    border:1.5px solid #E3D5AC;
+    background:
+      repeating-linear-gradient(to bottom, #FFF9E6 0px, #FFF9E6 27px, #EBDFBD 28px);
+    border-right:5px solid #C96F5A;
+    padding:18px 18px 14px; margin-bottom:14px;
+  }
+  .lib-card .stamp{
+    position:absolute; top:12px; left:14px;
+    font-family:'Frank Ruhl Libre'; font-weight:900; font-size:.95rem;
+    color:#B4462F; border:2.5px solid #B4462F; border-radius:8px;
+    padding:2px 10px; transform:rotate(-8deg); opacity:.8; letter-spacing:.5px;
+    background:rgba(255,249,230,.7);
+  }
+  .lib-card .stamp.done{color:var(--ok); border-color:var(--ok);}
+  .lib-card h3{font-size:1.15rem; margin-bottom:2px; padding-left:86px;}
+  .lib-card .sub{font-size:.88rem; color:#6b5f43; margin-bottom:10px;}
+  .lib-card .contact{
+    background:rgba(255,255,255,.75); border:1px solid #E3D5AC; border-radius:10px;
+    padding:10px 14px; margin:8px 0 12px;
+  }
+  .lib-card .contact .name{font-weight:700; font-size:1.05rem;}
+  .lib-card .contact .phone{font-size:1rem; direction:ltr; text-align:right; display:inline-block;}
+  .lib-card .cactions{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .lib-card .waitnote{font-size:.85rem; color:#6b5f43;}
+
+  /* ---------- מודאל ---------- */
+  .modal-back{
+    position:fixed; inset:0; background:rgba(35,43,47,.45); z-index:60;
+    display:flex; align-items:flex-end; justify-content:center;
+  }
+  @media(min-width:600px){ .modal-back{align-items:center;} }
+  .modal{
+    background:var(--card); border-radius:18px 18px 0 0; width:100%; max-width:520px;
+    padding:22px 20px calc(22px + env(safe-area-inset-bottom)); max-height:88dvh; overflow:auto;
+  }
+  @media(min-width:600px){ .modal{border-radius:18px;} }
+  .modal h2{font-size:1.25rem; margin-bottom:14px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-weight:600; font-size:.9rem; margin-bottom:5px;}
+  .field .hint{font-size:.8rem; color:var(--muted); margin-top:4px;}
+  .modal .actions{display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;}
+  .form-error{color:var(--danger); font-size:.88rem; margin-top:8px; font-weight:600;}
+
+  /* ---------- כניסה / הקמה ---------- */
+  .gate{
+    min-height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:32px 24px; text-align:center; gap:6px;
+  }
+  .gate .logo{
+    font-family:'Frank Ruhl Libre'; font-weight:900; font-size:2.2rem; color:var(--teal);
+  }
+  .gate .logo .pass{display:inline-block; color:var(--ink);}
+  .gate p{max-width:420px; color:var(--muted); margin:6px 0 20px;}
+  .books-row{display:flex; gap:5px; align-items:flex-end; margin-bottom:18px;}
+  .books-row span{display:inline-block; width:16px; border-radius:4px 4px 0 0;}
+  .setup-box{
+    background:var(--card); border:1.5px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); text-align:right; padding:20px; max-width:560px; margin-top:16px;
+  }
+  .setup-box ol{padding-inline-start:20px; margin:8px 0;}
+  .setup-box li{margin-bottom:8px;}
+  .setup-box code{background:var(--teal-soft); border-radius:5px; padding:1px 6px; font-size:.88em; direction:ltr; display:inline-block;}
+
+  /* ---------- ניהול ---------- */
+  .admin-table{width:100%; border-collapse:collapse; background:var(--card); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); font-size:.9rem;}
+  .admin-table th{background:var(--teal-soft); color:var(--teal-dark); text-align:right; padding:9px 10px; font-size:.82rem;}
+  .admin-table td{padding:9px 10px; border-top:1px solid var(--line);}
+  .admin-table .num{text-align:center; font-weight:700;}
+  .chip-list{display:flex; flex-wrap:wrap; gap:8px; margin:10px 0;}
+  .chip{
+    background:var(--teal-soft); color:var(--teal-dark); border-radius:999px; padding:5px 12px;
+    font-size:.88rem; font-weight:600; display:inline-flex; align-items:center; gap:8px;
+  }
+  .chip button{background:none; color:var(--danger); font-weight:900; padding:0 2px;}
+  .add-row{display:flex; gap:8px; margin-top:10px;}
+  .add-row input{flex:1;}
+  .toast{
+    position:fixed; bottom:calc(76px + env(safe-area-inset-bottom)); right:50%; transform:translateX(50%);
+    background:var(--ink); color:#fff; border-radius:999px; padding:10px 20px; font-size:.92rem;
+    z-index:80; box-shadow:var(--shadow); max-width:90vw; text-align:center;
+  }
+  .notice{
+    background:#FBF3DD; border:1.5px solid #E9D9A8; border-radius:var(--radius);
+    padding:12px 16px; font-size:.92rem; margin-bottom:16px;
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script type="module">
+/* ============================================================
+   ספר עובר · מערכת מסירת ספרי קריאה דיאלוגית בין הורים
+   ------------------------------------------------------------
+   הגדרה: הדביקו כאן את פרטי פרויקט ה-Firebase שלכם
+   (Firebase Console → Project settings → Your apps → Config)
+   ============================================================ */
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyAIB3R8K-L_iJDL8HMj76H70JGyv0cID60",
+  authDomain: "ramotbooks-6d0bb.firebaseapp.com",
+  projectId: "ramotbooks-6d0bb",
+  storageBucket: "ramotbooks-6d0bb.firebasestorage.app",
+  messagingSenderId: "906451439651",
+  appId: "1:906451439651:web:d6da32529a81130e53a196"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+/* ============================================================ */
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect,
+  onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection,
+  query, where, onSnapshot, runTransaction, serverTimestamp, writeBatch
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const GRADES = ["א","ב","ג","ד","ה","ו"];
+const GRADE_COLORS = ["var(--g1)","var(--g2)","var(--g3)","var(--g4)","var(--g5)","var(--g6)"];
+
+const S = {
+  user: null,          // firebase auth user
+  profile: null,       // users/{uid}
+  settings: undefined, // config/settings (undefined=טוען, null=לא קיים)
+  books: [],
+  entries: [],
+  matches: [],
+  contacts: {},        // entryId -> {name, phone}
+  tab: "mine",
+  modal: null,         // {kind, ...}
+  unsub: [],
+  matchingBusy: false,
+};
+
+const app$ = document.getElementById("app");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ts = t => t?.toMillis ? t.toMillis() : Date.now();
+
+let db, auth;
+
+/* ---------- אתחול ---------- */
+if (String(firebaseConfig.apiKey).includes("PASTE")) {
+  renderNeedsConfig();
+} else {
+  const fbApp = initializeApp(firebaseConfig);
+  auth = getAuth(fbApp);
+  db = getFirestore(fbApp);
+  onAuthStateChanged(auth, async user => {
+    S.unsub.forEach(u => u()); S.unsub = [];
+    Object.assign(S, { user, profile:null, settings:undefined, books:[], entries:[], matches:[], contacts:{}, modal:null });
+    if (user) {
+      const p = await getDoc(doc(db, "users", user.uid));
+      S.profile = p.exists() ? p.data() : null;
+      startListeners();
+    }
+    render();
+  });
+}
+
+async function login() {
+  const provider = new GoogleAuthProvider();
+  try { await signInWithPopup(auth, provider); }
+  catch (e) {
+    if (e.code === "auth/popup-blocked" || e.code === "auth/operation-not-supported-in-this-environment") {
+      await signInWithRedirect(auth, provider);
+    } else if (e.code !== "auth/popup-closed-by-user" && e.code !== "auth/cancelled-popup-request") {
+      toast("שגיאה בכניסה: " + e.code);
+    }
+  }
+}
+
+function startListeners() {
+  const uid = S.user.uid;
+  S.unsub.push(onSnapshot(doc(db, "config", "settings"), s => {
+    S.settings = s.exists() ? s.data() : null;
+    if (S.settings) refreshMatchListeners();
+    render();
+  }, err => { S.settings = null; render(); console.warn(err); }));
+
+  S.unsub.push(onSnapshot(collection(db, "books"), s => {
+    S.books = s.docs.map(d => ({ id: d.id, ...d.data() }));
+    render();
+  }, console.warn));
+
+  S.unsub.push(onSnapshot(collection(db, "entries"), s => {
+    S.entries = s.docs.map(d => ({ id: d.id, ...d.data() }));
+    render();
+    attemptMatchingForMe();
+  }, console.warn));
+}
+
+let matchUnsubs = [];
+function refreshMatchListeners() {
+  matchUnsubs.forEach(u => u()); matchUnsubs = [];
+  const uid = S.user.uid;
+  const merge = {};
+  const apply = () => { S.matches = Object.values(merge).flat(); loadMatchContacts(); render(); };
+  const listenQ = (key, q) => {
+    const u = onSnapshot(q, s => { merge[key] = s.docs.map(d => ({ id: d.id, ...d.data() })); apply(); }, console.warn);
+    matchUnsubs.push(u); S.unsub.push(u);
+  };
+  if (isAdmin()) {
+    listenQ("all", collection(db, "matches"));
+  } else {
+    listenQ("o", query(collection(db, "matches"), where("offerUid", "==", uid)));
+    listenQ("r", query(collection(db, "matches"), where("requestUid", "==", uid)));
+  }
+}
+
+function isAdmin() {
+  return !!(S.settings?.adminEmails || []).includes(S.user?.email);
+}
+
+/* ---------- פעולות ---------- */
+async function saveProfile(name, phone) {
+  await setDoc(doc(db, "users", S.user.uid), { name, phone, email: S.user.email }, { merge: true });
+  S.profile = { name, phone, email: S.user.email };
+  // עדכון פרטי קשר בכל הרישומים הפעילים שלי
+  const mine = S.entries.filter(e => e.uid === S.user.uid && ["waiting","matched"].includes(e.status));
+  await Promise.all(mine.map(e =>
+    setDoc(doc(db, "entries", e.id, "private", "contact"), { name, phone })
+  ));
+}
+
+async function claimAdmin() {
+  await setDoc(doc(db, "config", "settings"), {
+    adminEmails: [S.user.email],
+    year: new Date().getFullYear() + "–" + (new Date().getFullYear() + 1),
+    createdAt: serverTimestamp()
+  });
+  toast("הוגדרת כמנהל/ת המערכת 🎉");
+}
+
+async function addEntry(bookId, type) {
+  const entryRef = doc(collection(db, "entries"));
+  const batch = writeBatch(db);
+  batch.set(entryRef, {
+    uid: S.user.uid, bookId, type, status: "waiting",
+    matchId: null, createdAt: serverTimestamp()
+  });
+  batch.set(doc(db, "entries", entryRef.id, "private", "contact"),
+    { name: S.profile.name, phone: S.profile.phone });
+  await batch.commit();
+  closeModal();
+  toast(type === "offer" ? "נרשמת למסירת הספר ✓" : "נרשמת לקבלת הספר ✓");
+  setTimeout(attemptMatchingForMe, 800);
+}
+
+async function cancelEntry(entry) {
+  if (!confirm("לבטל את הרישום הזה?")) return;
+  await deleteDoc(doc(db, "entries", entry.id));
+  toast("הרישום בוטל");
+}
+
+/* התאמה אוטומטית: הראשון בתור המוסרים פוגש את הראשון בתור המבקשים */
+async function attemptMatchingForMe() {
+  if (S.matchingBusy || !S.user || !S.profile) return;
+  S.matchingBusy = true;
+  try {
+    const myWaiting = S.entries.filter(e => e.uid === S.user.uid && e.status === "waiting");
+    for (const mine of myWaiting) {
+      const otherType = mine.type === "offer" ? "request" : "offer";
+      const candidates = S.entries
+        .filter(e => e.bookId === mine.bookId && e.type === otherType && e.status === "waiting" && e.uid !== S.user.uid)
+        .sort((a, b) => ts(a.createdAt) - ts(b.createdAt));
+      for (const cand of candidates) {
+        try {
+          await runTransaction(db, async tx => {
+            const mySnap = await tx.get(doc(db, "entries", mine.id));
+            const caSnap = await tx.get(doc(db, "entries", cand.id));
+            if (!mySnap.exists() || !caSnap.exists()) throw new Error("stale");
+            if (mySnap.data().status !== "waiting" || caSnap.data().status !== "waiting") throw new Error("stale");
+            const offer = mine.type === "offer" ? mine : cand;
+            const request = mine.type === "offer" ? cand : mine;
+            const matchRef = doc(collection(db, "matches"));
+            tx.set(matchRef, {
+              bookId: mine.bookId,
+              offerEntryId: offer.id, requestEntryId: request.id,
+              offerUid: offer.uid, requestUid: request.uid,
+              offerConfirmed: false, requestConfirmed: false,
+              status: "active", createdAt: serverTimestamp()
+            });
+            tx.update(doc(db, "entries", offer.id), { status: "matched", matchId: matchRef.id });
+            tx.update(doc(db, "entries", request.id), { status: "matched", matchId: matchRef.id });
+          });
+          break; // הותאם - עוברים לרישום הבא שלי
+        } catch (e) { /* מישהו הקדים אותנו - מנסים את המועמד הבא */ }
+      }
+    }
+  } finally { S.matchingBusy = false; }
+}
+
+/* קריאת פרטי הקשר של הצד השני בהתאמות שלי */
+async function loadMatchContacts() {
+  const uid = S.user.uid;
+  for (const m of S.matches) {
+    if (m.status !== "active" && m.status !== "done") continue;
+    const otherEntryId = m.offerUid === uid ? m.requestEntryId
+                        : m.requestUid === uid ? m.offerEntryId : null;
+    for (const eid of (isAdmin() ? [m.offerEntryId, m.requestEntryId] : [otherEntryId])) {
+      if (!eid || S.contacts[eid]) continue;
+      try {
+        const c = await getDoc(doc(db, "entries", eid, "private", "contact"));
+        if (c.exists()) { S.contacts[eid] = c.data(); render(); }
+      } catch (e) { /* עדיין אין הרשאה - יתעדכן ברענון */ }
+    }
+  }
+}
+
+async function confirmHandover(m) {
+  const amOffer = m.offerUid === S.user.uid;
+  const myField = amOffer ? "offerConfirmed" : "requestConfirmed";
+  await runTransaction(db, async tx => {
+    const snap = await tx.get(doc(db, "matches", m.id));
+    const d = snap.data();
+    const upd = { [myField]: true };
+    const otherConfirmed = amOffer ? d.requestConfirmed : d.offerConfirmed;
+    if (otherConfirmed) {
+      upd.status = "done"; upd.doneAt = serverTimestamp();
+      tx.update(doc(db, "entries", d.offerEntryId), { status: "done" });
+      tx.update(doc(db, "entries", d.requestEntryId), { status: "done" });
+    }
+    tx.update(doc(db, "matches", m.id), upd);
+  });
+  toast("תודה! עודכן ✓");
+}
+
+async function cancelMatch(m, byAdmin = false) {
+  const msg = byAdmin ? "לבטל את ההתאמה הזו? שני הצדדים יחזרו לתור."
+                      : "לבטל את ההתאמה? תחזרו לתור וההתאמה הבאה תיווצר אוטומטית.";
+  if (!confirm(msg)) return;
+  await runTransaction(db, async tx => {
+    const snap = await tx.get(doc(db, "matches", m.id));
+    if (snap.data().status !== "active") return;
+    tx.update(doc(db, "matches", m.id), { status: "cancelled", cancelledAt: serverTimestamp() });
+    tx.update(doc(db, "entries", snap.data().offerEntryId), { status: "waiting", matchId: null });
+    tx.update(doc(db, "entries", snap.data().requestEntryId), { status: "waiting", matchId: null });
+  });
+  toast("ההתאמה בוטלה - חזרתם לתור");
+  setTimeout(attemptMatchingForMe, 800);
+}
+
+/* ---------- ניהול ---------- */
+async function addBook(grade, title) {
+  await setDoc(doc(collection(db, "books")), { grade, title: title.trim(), active: true, createdAt: serverTimestamp() });
+  toast("הספר נוסף לקטלוג");
+}
+async function toggleBook(b) {
+  const waiting = S.entries.filter(e => e.bookId === b.id && e.status === "waiting").length;
+  if (b.active && waiting > 0 && !confirm(`יש ${waiting} ממתינים בתור לספר הזה. לסמן אותו בכל זאת כלא-פעיל השנה?`)) return;
+  await updateDoc(doc(db, "books", b.id), { active: !b.active });
+}
+async function deleteBook(b) {
+  if (S.entries.some(e => e.bookId === b.id)) { toast("אי אפשר למחוק - יש רישומים לספר. אפשר לסמן כלא-פעיל."); return; }
+  if (!confirm(`למחוק את "${b.title}" מהקטלוג?`)) return;
+  await deleteDoc(doc(db, "books", b.id));
+}
+async function saveAdmins(list) {
+  await updateDoc(doc(db, "config", "settings"), { adminEmails: list });
+}
+async function saveYear(y) {
+  await updateDoc(doc(db, "config", "settings"), { year: y });
+  toast("עודכן");
+}
+
+/* ---------- עזרי תצוגה ---------- */
+const bookById = id => S.books.find(b => b.id === id);
+const gradeColor = g => GRADE_COLORS[(g - 1) % 6];
+const gradeName = g => "כיתה " + GRADES[g - 1];
+
+function queuePos(entry) {
+  const q = S.entries
+    .filter(e => e.bookId === entry.bookId && e.type === entry.type && e.status === "waiting")
+    .sort((a, b) => ts(a.createdAt) - ts(b.createdAt));
+  return { pos: q.findIndex(e => e.id === entry.id) + 1, total: q.length };
+}
+function counts(bookId) {
+  const w = t => S.entries.filter(e => e.bookId === bookId && e.type === t && e.status === "waiting").length;
+  return { offers: w("offer"), requests: w("request") };
+}
+function waLink(phone, bookTitle) {
+  const p = phone.replace(/[^\d]/g, "").replace(/^0/, "972");
+  const txt = encodeURIComponent(`היי! הותאמנו במערכת "ספר עובר" לגבי הספר "${bookTitle}". מתי נוח לתאם מסירה?`);
+  return `https://wa.me/${p}?text=${txt}`;
+}
+function toast(msg) {
+  document.querySelectorAll(".toast").forEach(t => t.remove());
+  const t = document.createElement("div");
+  t.className = "toast"; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+function closeModal() { S.modal = null; render(); }
+
+/* ---------- רנדור ---------- */
+function render() {
+  if (!auth) return;
+  if (!S.user) { renderGate(); return; }
+  if (S.settings === undefined) { app$.innerHTML = `<div class="gate"><div class="logo">ספר עובר</div><p>טוען…</p></div>`; return; }
+  if (S.settings === null) { renderFirstRun(); return; }
+  if (!S.profile?.name || !S.profile?.phone) { renderApp(true); return; }
+  renderApp(false);
+}
+
+function booksLogoRow() {
+  return `<div class="books-row" aria-hidden="true">${
+    [38,52,44,60,48,42].map((h,i)=>`<span style="height:${h}px;background:${GRADE_COLORS[i]}"></span>`).join("")
+  }</div>`;
+}
+
+function renderGate() {
+  app$.innerHTML = `
+    <div class="gate">
+      ${booksLogoRow()}
+      <div class="logo">ספר <span class="pass">עובר</span></div>
+      <p>מסירת ספרי הקריאה הדיאלוגית בין הורי בית הספר - במקום לקנות כל שנה מחדש, הספרים ממשיכים הלאה.</p>
+      <button class="btn btn-primary" id="loginBtn" style="font-size:1.05rem; padding:12px 28px;">כניסה עם Google</button>
+      <p style="font-size:.82rem; margin-top:18px;">פרטי הקשר שלכם נחשפים רק להורה שהותאם אליכם - לא לאף אחד אחר.</p>
+    </div>`;
+  document.getElementById("loginBtn").onclick = login;
+}
+
+function renderNeedsConfig() {
+  app$.innerHTML = `
+    <div class="gate">
+      ${booksLogoRow()}
+      <div class="logo">ספר עובר</div>
+      <div class="setup-box">
+        <h3 style="margin-bottom:8px;">כמעט מוכן - נשאר לחבר ל-Firebase</h3>
+        <ol>
+          <li>ב-<b>Firebase Console</b> פתחו את הפרויקט → ⚙️ Project settings → Your apps → הוסיפו Web app אם אין.</li>
+          <li>העתיקו את אובייקט ה-<code>firebaseConfig</code> והדביקו אותו בראש הקובץ הזה (מסומן בהערה).</li>
+          <li>הפעילו <b>Authentication → Google</b>.</li>
+          <li>צרו <b>Firestore Database</b> והדביקו את חוקי האבטחה מהקובץ <code>firestore.rules</code>.</li>
+          <li>העלו את הקובץ לאתר (Firebase Hosting / GitHub Pages) והוסיפו את הדומיין ב-Authentication → Settings → Authorized domains.</li>
+        </ol>
+      </div>
+    </div>`;
+}
+
+function renderFirstRun() {
+  app$.innerHTML = `
+    <div class="gate">
+      ${booksLogoRow()}
+      <div class="logo">ספר עובר</div>
+      <p>המערכת מחוברת אבל עדיין לא הוגדרה. אם את/ה מוועד ההורים - אפשר להגדיר את עצמך כמנהל/ת ולהתחיל להזין את קטלוג הספרים.</p>
+      <button class="btn btn-primary" id="claimBtn">הגדר אותי כמנהל/ת המערכת</button>
+      <button class="btn btn-ghost" id="outBtn">התנתקות</button>
+    </div>`;
+  document.getElementById("claimBtn").onclick = claimAdmin;
+  document.getElementById("outBtn").onclick = () => signOut(auth);
+}
+
+function renderApp(needProfile) {
+  const admin = isAdmin();
+  const tabs = [
+    { id: "mine", label: "הספרים שלי", ico: "📖" },
+    { id: "board", label: "לוח הספרים", ico: "🗂️" },
+    ...(admin ? [{ id: "admin", label: "ניהול", ico: "⚙️" }] : []),
+  ];
+  if (!tabs.some(t => t.id === S.tab)) S.tab = "mine";
+
+  app$.innerHTML = `
+    <header class="app"><div class="inner">
+      <div class="brand"><h1>ספר עובר</h1><span class="year">${esc(S.settings.year || "")}</span></div>
+      <button class="avatar-btn" id="profBtn">👤 ${esc(S.profile?.name || "הפרופיל שלי")}</button>
+    </div></header>
+    <div class="wrap"><main id="main"></main></div>
+    <nav class="tabs" aria-label="ניווט ראשי"><div class="inner">
+      ${tabs.map(t => `<button data-tab="${t.id}" class="${S.tab === t.id ? "active" : ""}"><span class="ico">${t.ico}</span>${t.label}</button>`).join("")}
+    </div></nav>
+    <div id="modalHost"></div>`;
+
+  document.getElementById("profBtn").onclick = () => { S.modal = { kind: "profile" }; render(); };
+  app$.querySelectorAll("nav.tabs button").forEach(b => b.onclick = () => { S.tab = b.dataset.tab; render(); });
+
+  const main = document.getElementById("main");
+  if (S.tab === "mine") renderMine(main);
+  else if (S.tab === "board") renderBoard(main);
+  else if (S.tab === "admin") renderAdmin(main);
+
+  if (needProfile && !S.modal) S.modal = { kind: "profile", required: true };
+  renderModal();
+}
+
+/* --- הספרים שלי --- */
+function renderMine(el) {
+  const uid = S.user.uid;
+  const myMatches = S.matches.filter(m => (m.offerUid === uid || m.requestUid === uid));
+  const active = myMatches.filter(m => m.status === "active");
+  const done = myMatches.filter(m => m.status === "done");
+  const waiting = S.entries.filter(e => e.uid === uid && e.status === "waiting")
+                           .sort((a, b) => ts(a.createdAt) - ts(b.createdAt));
+
+  let html = "";
+
+  html += `<div class="section-title">התאמות פעילות ${active.length ? `<span class="count">${active.length}</span>` : ""}</div>`;
+  if (!active.length) html += `<div class="empty">כשתימצא התאמה בין מוסר/ת למבקש/ת - היא תופיע כאן, עם פרטי הקשר של הצד השני.</div>`;
+  else html += active.map(m => libCard(m)).join("");
+
+  html += `<div class="section-title">ממתינים בתור ${waiting.length ? `<span class="count">${waiting.length}</span>` : ""}</div>`;
+  if (!waiting.length) html += `<div class="empty">אין רישומים ממתינים. עברו ל<b>לוח הספרים</b> כדי להירשם למסירה או לקבלה.</div>`;
+  else html += waiting.map(e => {
+    const b = bookById(e.bookId); if (!b) return "";
+    const { pos, total } = queuePos(e);
+    const other = counts(e.bookId)[e.type === "offer" ? "requests" : "offers"];
+    const inactive = !b.active;
+    return `<div class="entry-card">
+      <div class="spine-dot" style="background:${gradeColor(b.grade)}"></div>
+      <div class="info">
+        <div class="t">${esc(b.title)} <span class="type-tag ${e.type === "offer" ? "type-offer" : "type-request"}">${e.type === "offer" ? "למסירה" : "מחפש/ת"}</span>${inactive ? `<span class="badge-inactive">הספר לא ברשימה השנה</span>` : ""}</div>
+        <div class="s">${gradeName(b.grade)} · ${other ? "מחכים שההתאמה תיסגר…" : (e.type === "offer" ? "עוד אין מי שמחפש את הספר" : "עוד אין מי שמוסר את הספר")}</div>
+      </div>
+      <span class="pos-badge">מקום ${pos} מתוך ${total} בתור</span>
+      <button class="btn-danger-ghost" data-cancel="${e.id}">ביטול</button>
+    </div>`;
+  }).join("");
+
+  if (done.length) {
+    html += `<div class="section-title">הועברו בהצלחה <span class="count">${done.length}</span></div>`;
+    html += done.map(m => {
+      const b = bookById(m.bookId);
+      return `<div class="entry-card" style="opacity:.75">
+        <div class="spine-dot" style="background:${b ? gradeColor(b.grade) : "var(--line)"}"></div>
+        <div class="info"><div class="t">${esc(b?.title || "ספר")} ✓</div><div class="s">${b ? gradeName(b.grade) : ""} · הספר עבר הלאה 💛</div></div>
+      </div>`;
+    }).join("");
+  }
+
+  el.innerHTML = html;
+  el.querySelectorAll("[data-cancel]").forEach(b => b.onclick = () => {
+    const e = S.entries.find(x => x.id === b.dataset.cancel);
+    if (e) cancelEntry(e);
+  });
+  el.querySelectorAll("[data-confirm]").forEach(b => b.onclick = () => {
+    const m = S.matches.find(x => x.id === b.dataset.confirm);
+    if (m) confirmHandover(m);
+  });
+  el.querySelectorAll("[data-cancelmatch]").forEach(b => b.onclick = () => {
+    const m = S.matches.find(x => x.id === b.dataset.cancelmatch);
+    if (m) cancelMatch(m);
+  });
+}
+
+function libCard(m) {
+  const uid = S.user.uid;
+  const b = bookById(m.bookId);
+  const amOffer = m.offerUid === uid;
+  const otherEntryId = amOffer ? m.requestEntryId : m.offerEntryId;
+  const c = S.contacts[otherEntryId];
+  const myConfirmed = amOffer ? m.offerConfirmed : m.requestConfirmed;
+  const otherConfirmed = amOffer ? m.requestConfirmed : m.offerConfirmed;
+  return `<div class="lib-card">
+    <div class="stamp">הותאם ✓</div>
+    <h3>${esc(b?.title || "ספר")}</h3>
+    <div class="sub">${b ? gradeName(b.grade) : ""} · ${amOffer ? "את/ה מוסר/ת את הספר" : "את/ה מקבל/ת את הספר"}</div>
+    ${c ? `
+      <div class="contact">
+        <div class="name">${amOffer ? "מוסרים אל:" : "מקבלים מ:"} ${esc(c.name)}</div>
+        <a class="phone" href="tel:${esc(c.phone)}">${esc(c.phone)}</a>
+      </div>
+      <div class="cactions">
+        <a class="btn btn-wa" target="_blank" rel="noopener" href="${waLink(c.phone, b?.title || "")}">💬 הודעה בוואטסאפ</a>
+        ${myConfirmed
+          ? `<span class="waitnote">אישרת ✓ ${otherConfirmed ? "" : "· ממתין לאישור הצד השני"}</span>`
+          : `<button class="btn btn-outline" data-confirm="${m.id}">הספר הועבר ✓</button>`}
+        <button class="btn-danger-ghost" data-cancelmatch="${m.id}">ביטול התאמה</button>
+      </div>`
+    : `<div class="waitnote">טוען את פרטי הקשר של הצד השני…</div>`}
+  </div>`;
+}
+
+/* --- לוח הספרים --- */
+function renderBoard(el) {
+  let html = `<div class="notice">📚 בכל כיתה שני ספרי קריאה. סמנו <b>למסור</b> אם סיימתם עם הספר, או <b>לקבל</b> אם אתם צריכים אותו לשנה הבאה - וההתאמה תיווצר אוטומטית לפי הסדר בתור.</div>`;
+  const anyBooks = S.books.some(b => b.active);
+  if (!anyBooks) html += `<div class="empty">קטלוג הספרים עדיין ריק. ועד ההורים יזין את הרשימה בקרוב.</div>`;
+
+  for (let g = 1; g <= 6; g++) {
+    const list = S.books.filter(b => b.grade === g && b.active)
+                        .sort((a, b) => ts(a.createdAt) - ts(b.createdAt));
+    if (!list.length) continue;
+    html += `<div class="grade-block">
+      <div class="grade-head"><span class="grade-chip" style="background:${gradeColor(g)}">${GRADES[g-1]}</span><h3>${gradeName(g)}</h3></div>
+      ${list.map(b => {
+        const c = counts(b.id);
+        return `<div class="book-card">
+          <div class="spine" style="background:${gradeColor(g)}"></div>
+          <div class="body">
+            <div class="title">${esc(b.title)}</div>
+            <div class="meta"><span>ממתינים למסור: <b>${c.offers}</b></span><span>מחפשים: <b>${c.requests}</b></span></div>
+            <div class="actions">
+              <button class="btn btn-primary" data-add="${b.id}|offer">יש לי למסור</button>
+              <button class="btn btn-outline" data-add="${b.id}|request">אני מחפש/ת</button>
+            </div>
+          </div>
+        </div>`;
+      }).join("")}
+    </div>`;
+  }
+  el.innerHTML = html;
+  el.querySelectorAll("[data-add]").forEach(btn => btn.onclick = () => {
+    const [bookId, type] = btn.dataset.add.split("|");
+    const dup = S.entries.filter(e => e.uid === S.user.uid && e.bookId === bookId && e.type === type && ["waiting","matched"].includes(e.status)).length;
+    if (dup && !confirm("כבר יש לך רישום פעיל לספר הזה. להוסיף רישום נוסף (למשל לילד/ה נוסף/ת)?")) return;
+    S.modal = { kind: "confirmAdd", bookId, type };
+    render();
+  });
+}
+
+/* --- ניהול --- */
+function renderAdmin(el) {
+  const activeMatches = S.matches.filter(m => m.status === "active");
+  const doneMatches = S.matches.filter(m => m.status === "done");
+  const DAY = 86400000;
+
+  let html = `<div class="section-title">מבט-על</div>
+  <table class="admin-table"><thead><tr><th>ספר</th><th>כיתה</th><th class="num">מוסרים בתור</th><th class="num">מבקשים בתור</th><th class="num">התאמות פתוחות</th><th class="num">הושלמו</th></tr></thead><tbody>
+  ${S.books.sort((a,b)=>a.grade-b.grade||ts(a.createdAt)-ts(b.createdAt)).map(b => {
+    const c = counts(b.id);
+    const am = activeMatches.filter(m => m.bookId === b.id).length;
+    const dm = doneMatches.filter(m => m.bookId === b.id).length;
+    return `<tr style="${b.active ? "" : "opacity:.5"}"><td>${esc(b.title)}${b.active ? "" : " (לא פעיל)"}</td><td>${GRADES[b.grade-1]}</td><td class="num">${c.offers}</td><td class="num">${c.requests}</td><td class="num">${am}</td><td class="num">${dm}</td></tr>`;
+  }).join("")}
+  </tbody></table>`;
+
+  const stuck = activeMatches.filter(m => Date.now() - ts(m.createdAt) > 10 * DAY);
+  html += `<div class="section-title">התאמות פתוחות ${activeMatches.length ? `<span class="count">${activeMatches.length}</span>` : ""}</div>`;
+  if (!activeMatches.length) html += `<div class="empty">אין התאמות פתוחות כרגע.</div>`;
+  else html += activeMatches.map(m => {
+    const b = bookById(m.bookId);
+    const days = Math.floor((Date.now() - ts(m.createdAt)) / DAY);
+    const oc = S.contacts[m.offerEntryId], rc = S.contacts[m.requestEntryId];
+    return `<div class="entry-card" style="${days > 10 ? "border-color:#E0B08F;" : ""}">
+      <div class="spine-dot" style="background:${b ? gradeColor(b.grade) : "var(--line)"}"></div>
+      <div class="info">
+        <div class="t">${esc(b?.title || "ספר")} ${days > 10 ? "⏰" : ""}</div>
+        <div class="s">${esc(oc?.name || "…")} ← ${esc(rc?.name || "…")} · לפני ${days} ימים · אישורים: ${(m.offerConfirmed?1:0)+(m.requestConfirmed?1:0)}/2</div>
+      </div>
+      <button class="btn-danger-ghost" data-admincancel="${m.id}">ביטול התאמה</button>
+    </div>`;
+  }).join("");
+  if (stuck.length) html += `<p style="font-size:.85rem;color:var(--muted)">⏰ = פתוחה יותר מ-10 ימים. שווה לבדוק עם ההורים, ואם צריך - לבטל כדי שהתור ימשיך לזוז.</p>`;
+
+  html += `<div class="section-title">קטלוג הספרים</div>`;
+  for (let g = 1; g <= 6; g++) {
+    const list = S.books.filter(b => b.grade === g).sort((a,b)=>ts(a.createdAt)-ts(b.createdAt));
+    html += `<div class="grade-head"><span class="grade-chip" style="background:${gradeColor(g)}">${GRADES[g-1]}</span><h3>${gradeName(g)}</h3></div>
+    ${list.map(b => `<div class="entry-card" style="${b.active ? "" : "opacity:.55"}">
+        <div class="spine-dot" style="background:${gradeColor(g)}"></div>
+        <div class="info"><div class="t">${esc(b.title)}</div><div class="s">${b.active ? "פעיל השנה" : "לא פעיל השנה"}</div></div>
+        <button class="btn-ghost" data-toggle="${b.id}">${b.active ? "סימון כלא-פעיל" : "החזרה לרשימה"}</button>
+        <button class="btn-danger-ghost" data-delbook="${b.id}">מחיקה</button>
+      </div>`).join("")}
+    <div class="add-row"><input type="text" id="newBook${g}" placeholder="שם ספר חדש לכיתה ${GRADES[g-1]}…"><button class="btn btn-outline" data-addbook="${g}">הוספה</button></div>`;
+  }
+
+  html += `<div class="section-title">הגדרות</div>
+  <div class="entry-card" style="display:block">
+    <div class="field"><label>שנת פעילות (מוצג בכותרת)</label>
+      <div class="add-row"><input id="yearInput" value="${esc(S.settings.year || "")}"><button class="btn btn-outline" id="saveYear">שמירה</button></div>
+    </div>
+    <div class="field"><label>מנהלות/י המערכת (ועד ההורים)</label>
+      <div class="chip-list">${(S.settings.adminEmails || []).map(e =>
+        `<span class="chip">${esc(e)}${e !== S.user.email ? `<button data-rmadmin="${esc(e)}" title="הסרה">×</button>` : ""}</span>`).join("")}
+      </div>
+      <div class="add-row"><input type="email" id="newAdmin" placeholder="כתובת Gmail של חבר/ת ועד…" dir="ltr"><button class="btn btn-outline" id="addAdmin">הוספה</button></div>
+      <div class="hint">מנהלים רואים את כל התורים וההתאמות ויכולים לעדכן את הקטלוג.</div>
+    </div>
+  </div>`;
+
+  el.innerHTML = html;
+  el.querySelectorAll("[data-admincancel]").forEach(b => b.onclick = () => {
+    const m = S.matches.find(x => x.id === b.dataset.admincancel);
+    if (m) cancelMatch(m, true);
+  });
+  el.querySelectorAll("[data-toggle]").forEach(b => b.onclick = () => toggleBook(S.books.find(x => x.id === b.dataset.toggle)));
+  el.querySelectorAll("[data-delbook]").forEach(b => b.onclick = () => deleteBook(S.books.find(x => x.id === b.dataset.delbook)));
+  el.querySelectorAll("[data-addbook]").forEach(b => b.onclick = () => {
+    const g = Number(b.dataset.addbook);
+    const inp = document.getElementById("newBook" + g);
+    if (inp.value.trim()) { addBook(g, inp.value); inp.value = ""; }
+  });
+  document.getElementById("saveYear").onclick = () => saveYear(document.getElementById("yearInput").value.trim());
+  document.getElementById("addAdmin").onclick = () => {
+    const v = document.getElementById("newAdmin").value.trim().toLowerCase();
+    if (!v.includes("@")) { toast("כתובת לא תקינה"); return; }
+    saveAdmins([...new Set([...(S.settings.adminEmails || []), v])]);
+    document.getElementById("newAdmin").value = "";
+  };
+  el.querySelectorAll("[data-rmadmin]").forEach(b => b.onclick = () => {
+    if (!confirm(`להסיר את ${b.dataset.rmadmin} מהניהול?`)) return;
+    saveAdmins((S.settings.adminEmails || []).filter(e => e !== b.dataset.rmadmin));
+  });
+}
+
+/* --- מודאלים --- */
+function renderModal() {
+  const host = document.getElementById("modalHost");
+  if (!host) return;
+  if (!S.modal) { host.innerHTML = ""; return; }
+
+  if (S.modal.kind === "profile") {
+    const req = S.modal.required;
+    host.innerHTML = `<div class="modal-back" id="mback"><div class="modal" role="dialog" aria-modal="true">
+      <h2>${req ? "נעים להכיר! 👋" : "הפרופיל שלי"}</h2>
+      ${req ? `<p style="color:var(--muted); font-size:.92rem; margin-top:-6px;">כדי שההורה שיותאם אליך יוכל ליצור קשר, נצטרך שם וטלפון. הפרטים נחשפים <b>רק</b> למי שהותאם אליך.</p>` : ""}
+      <div class="field"><label for="pfName">שם מלא</label><input id="pfName" value="${esc(S.profile?.name || S.user.displayName || "")}"></div>
+      <div class="field"><label for="pfPhone">טלפון נייד</label><input id="pfPhone" inputmode="tel" dir="ltr" placeholder="050-1234567" value="${esc(S.profile?.phone || "")}"></div>
+      <div class="form-error" id="pfErr"></div>
+      <div class="actions">
+        <button class="btn btn-primary" id="pfSave">שמירה</button>
+        ${req ? "" : `<button class="btn btn-ghost" id="pfClose">סגירה</button>`}
+        <button class="btn-danger-ghost" id="pfOut" style="margin-inline-start:auto;">התנתקות</button>
+      </div>
+    </div></div>`;
+    document.getElementById("pfSave").onclick = async () => {
+      const name = document.getElementById("pfName").value.trim();
+      const phone = document.getElementById("pfPhone").value.trim();
+      if (name.length < 2) { document.getElementById("pfErr").textContent = "נא להזין שם."; return; }
+      if (!/^0\d{1,2}-?\d{7}$/.test(phone.replace(/\s/g, ""))) { document.getElementById("pfErr").textContent = "נא להזין מספר טלפון ישראלי תקין."; return; }
+      await saveProfile(name, phone.replace(/\s/g, ""));
+      closeModal(); toast("הפרטים נשמרו ✓");
+    };
+    const closeBtn = document.getElementById("pfClose");
+    if (closeBtn) closeBtn.onclick = closeModal;
+    document.getElementById("pfOut").onclick = () => signOut(auth);
+    if (!req) document.getElementById("mback").onclick = e => { if (e.target.id === "mback") closeModal(); };
+  }
+
+  if (S.modal.kind === "confirmAdd") {
+    const b = bookById(S.modal.bookId);
+    const isOffer = S.modal.type === "offer";
+    const c = counts(S.modal.bookId);
+    const otherWaiting = isOffer ? c.requests : c.offers;
+    host.innerHTML = `<div class="modal-back" id="mback"><div class="modal" role="dialog" aria-modal="true">
+      <h2>${isOffer ? "מסירת ספר" : "בקשת ספר"}</h2>
+      <p><b>${esc(b.title)}</b> · ${gradeName(b.grade)}</p>
+      <p style="font-size:.92rem; color:var(--muted);">${
+        otherWaiting > 0
+          ? (isOffer ? `יש כרגע ${otherWaiting} הורים שמחפשים את הספר - סביר שההתאמה תיווצר מיד.` : `יש כרגע ${otherWaiting} הורים שמוסרים את הספר - סביר שההתאמה תיווצר מיד.`)
+          : `עדיין אין צד שני בתור - תיכנסו לתור, וברגע שיהיה, ההתאמה תיווצר אוטומטית.`
+      }</p>
+      <p style="font-size:.92rem;">פרטי הקשר שיוצגו לצד השני: <b>${esc(S.profile.name)}</b>, <span dir="ltr">${esc(S.profile.phone)}</span> <button class="btn-ghost" id="editProf" style="font-size:.85rem;">עריכה</button></p>
+      <div class="actions">
+        <button class="btn btn-primary" id="addGo">${isOffer ? "כן, יש לי למסור" : "כן, אני מחפש/ת"}</button>
+        <button class="btn btn-ghost" id="addNo">ביטול</button>
+      </div>
+    </div></div>`;
+    document.getElementById("addGo").onclick = () => addEntry(S.modal.bookId, S.modal.type);
+    document.getElementById("addNo").onclick = closeModal;
+    document.getElementById("editProf").onclick = () => { S.modal = { kind: "profile" }; render(); };
+    document.getElementById("mback").onclick = e => { if (e.target.id === "mback") closeModal(); };
+  }
+}
+
+render();
+</script>
+</body>
+</html>
