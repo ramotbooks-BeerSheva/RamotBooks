@@ -244,10 +244,15 @@
    הגדרה: הדביקו כאן את פרטי פרויקט ה-Firebase שלכם
    (Firebase Console → Project settings → Your apps → Config)
    ============================================================ */
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+import { initializeApp as initFbApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect,
+  onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection,
+  query, where, onSnapshot, runTransaction, serverTimestamp, writeBatch
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -258,21 +263,6 @@ const firebaseConfig = {
   messagingSenderId: "906451439651",
   appId: "1:906451439651:web:d6da32529a81130e53a196"
 };
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-/* ============================================================ */
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect,
-  onAuthStateChanged, signOut
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {
-  getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection,
-  query, where, onSnapshot, runTransaction, serverTimestamp, writeBatch
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
 const GRADES = ["א","ב","ג","ד","ה","ו"];
 const GRADE_COLORS = ["var(--g1)","var(--g2)","var(--g3)","var(--g4)","var(--g5)","var(--g6)"];
 
