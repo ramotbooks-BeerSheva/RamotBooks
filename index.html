@@ -391,8 +391,8 @@ async function addEntry(bookId, type) {
     });
     await setDoc(doc(db, "entries", entryRef.id, "private", "contact"),
       { name: S.profile.name, phone: S.profile.phone });
-    closeModal();
-    toast(type === "offer" ? "נרשמת למסירת הספר ✓" : "נרשמת לקבלת הספר ✓");
+    S.modal = { kind: "postAdd", type, bookTitle: bookById(bookId)?.title || "" };
+    render();
     setTimeout(attemptMatchingForMe, 800);
   } catch (err) {
     console.error("addEntry failed:", err);
@@ -408,6 +408,33 @@ async function cancelEntry(entry) {
   } catch (err) {
     console.error("cancelEntry failed:", err);
     toast("שגיאה בביטול הרישום - נסו שוב ⚠️");
+  }
+}
+
+/* מחיקה לצמיתות - גם אם הרישום כרגע מותאם. לא חוזר לתור, בניגוד ל"ביטול התאמה". */
+async function permanentlyDeleteEntry(entry) {
+  const label = entry.type === "offer" ? "המסירה" : "הבקשה";
+  if (!confirm(`למחוק לצמיתות את ${label} הזו? בשונה מ"ביטול התאמה" - הרישום הזה לא יחזור לתור.`)) return;
+  try {
+    if (entry.matchId) {
+      const match = S.matches.find(x => x.id === entry.matchId);
+      const otherEntryId = match
+        ? (entry.id === match.offerEntryId ? match.requestEntryId : match.offerEntryId)
+        : null;
+      await runTransaction(db, async tx => {
+        const matchSnap = await tx.get(doc(db, "matches", entry.matchId));
+        if (matchSnap.exists() && matchSnap.data().status === "active") {
+          tx.update(doc(db, "matches", entry.matchId), { status: "cancelled", cancelledAt: serverTimestamp() });
+          if (otherEntryId) tx.update(doc(db, "entries", otherEntryId), { status: "waiting", matchId: null });
+        }
+        tx.update(doc(db, "entries", entry.id), { status: "cancelled", matchId: null });
+      });
+    }
+    await deleteDoc(doc(db, "entries", entry.id));
+    toast(`${label} נמחקה לצמיתות ✓`);
+  } catch (err) {
+    console.error("permanentlyDeleteEntry failed:", err);
+    toast("שגיאה במחיקה - נסו שוב ⚠️");
   }
 }
 
@@ -544,7 +571,7 @@ function counts(bookId) {
 }
 function waLink(phone, bookTitle) {
   const p = phone.replace(/[^\d]/g, "").replace(/^0/, "972");
-  const txt = encodeURIComponent(`היי! הותאמנו במערכת "ספר עובר" לגבי הספר "${bookTitle}". מתי נוח לתאם מסירה?`);
+  const txt = encodeURIComponent(`היי! הותאמנו במערכת "ספר עובר" לגבי הספר "${bookTitle}". מתי נוח לתאם מסירה? חשוב - אחרי שנעביר בפועל, כל אחד/ת מאיתנו צריך/ה ללחוץ "הספר הועבר ✓" במערכת כדי לסגור את ההתאמה 🙏`);
   return `https://wa.me/${p}?text=${txt}`;
 }
 function toast(msg) {
@@ -704,12 +731,17 @@ function renderMine(el) {
     const m = S.matches.find(x => x.id === b.dataset.cancelmatch);
     if (m) cancelMatch(m);
   });
+  el.querySelectorAll("[data-permdelete]").forEach(b => b.onclick = () => {
+    const e = S.entries.find(x => x.id === b.dataset.permdelete);
+    if (e) permanentlyDeleteEntry(e);
+  });
 }
 
 function libCard(m) {
   const uid = S.user.uid;
   const b = bookById(m.bookId);
   const amOffer = m.offerUid === uid;
+  const myEntryId = amOffer ? m.offerEntryId : m.requestEntryId;
   const otherEntryId = amOffer ? m.requestEntryId : m.offerEntryId;
   const c = S.contacts[otherEntryId];
   const myConfirmed = amOffer ? m.offerConfirmed : m.requestConfirmed;
@@ -729,6 +761,7 @@ function libCard(m) {
           ? `<span class="waitnote">אישרת ✓ ${otherConfirmed ? "" : "· ממתין לאישור הצד השני"}</span>`
           : `<button class="btn btn-outline" data-confirm="${m.id}">הספר הועבר ✓</button>`}
         <button class="btn-danger-ghost" data-cancelmatch="${m.id}">ביטול התאמה</button>
+        <button class="btn-danger-ghost" data-permdelete="${myEntryId}" title="מחיקה סופית - לא חוזר לתור">מחיקה לצמיתות</button>
       </div>`
     : `<div class="waitnote">טוען את פרטי הקשר של הצד השני…</div>`}
   </div>`;
@@ -802,6 +835,8 @@ function renderAdmin(el) {
         <div class="s">${esc(oc?.name || "…")} ← ${esc(rc?.name || "…")} · לפני ${days} ימים · אישורים: ${(m.offerConfirmed?1:0)+(m.requestConfirmed?1:0)}/2</div>
       </div>
       <button class="btn-danger-ghost" data-admincancel="${m.id}">ביטול התאמה</button>
+      <button class="btn-danger-ghost" data-admindel="${m.offerEntryId}" title="מחיקה סופית של צד המוסר - לא חוזר לתור">מחיקת המוסר/ת</button>
+      <button class="btn-danger-ghost" data-admindel="${m.requestEntryId}" title="מחיקה סופית של צד המבקש - לא חוזר לתור">מחיקת המבקש/ת</button>
     </div>`;
   }).join("");
   if (stuck.length) html += `<p style="font-size:.85rem;color:var(--muted)">⏰ = פתוחה יותר מ-10 ימים. שווה לבדוק עם ההורים, ואם צריך - לבטל כדי שהתור ימשיך לזוז.</p>`;
@@ -837,6 +872,10 @@ function renderAdmin(el) {
   el.querySelectorAll("[data-admincancel]").forEach(b => b.onclick = () => {
     const m = S.matches.find(x => x.id === b.dataset.admincancel);
     if (m) cancelMatch(m, true);
+  });
+  el.querySelectorAll("[data-admindel]").forEach(b => b.onclick = () => {
+    const e = S.entries.find(x => x.id === b.dataset.admindel);
+    if (e) permanentlyDeleteEntry(e);
   });
   el.querySelectorAll("[data-toggle]").forEach(b => b.onclick = () => toggleBook(S.books.find(x => x.id === b.dataset.toggle)));
   el.querySelectorAll("[data-delbook]").forEach(b => b.onclick = () => deleteBook(S.books.find(x => x.id === b.dataset.delbook)));
@@ -914,6 +953,22 @@ function renderModal() {
     document.getElementById("addGo").onclick = () => addEntry(S.modal.bookId, S.modal.type);
     document.getElementById("addNo").onclick = closeModal;
     document.getElementById("editProf").onclick = () => { S.modal = { kind: "profile" }; render(); };
+    document.getElementById("mback").onclick = e => { if (e.target.id === "mback") closeModal(); };
+  }
+
+  if (S.modal.kind === "postAdd") {
+    const isOffer = S.modal.type === "offer";
+    host.innerHTML = `<div class="modal-back" id="mback"><div class="modal" role="dialog" aria-modal="true">
+      <h2>${isOffer ? "נרשמת למסירת הספר ✓" : "נרשמת לקבלת הספר ✓"}</h2>
+      <p><b>${esc(S.modal.bookTitle)}</b></p>
+      <p style="font-size:.92rem; color:var(--muted);">ברגע שתימצא התאמה, תוכלו לראות אותה - כולל פרטי הקשר של הצד השני - ב<b>"הספרים שלי"</b>. אפשר גם לבדוק שוב מאוחר יותר, אין צורך להישאר עכשיו במסך.</p>
+      <div class="actions">
+        <button class="btn btn-primary" id="goMine">לצפייה ב"הספרים שלי"</button>
+        <button class="btn btn-ghost" id="stayBoard">המשך בלוח הספרים</button>
+      </div>
+    </div></div>`;
+    document.getElementById("goMine").onclick = () => { S.tab = "mine"; closeModal(); };
+    document.getElementById("stayBoard").onclick = closeModal;
     document.getElementById("mback").onclick = e => { if (e.target.id === "mback") closeModal(); };
   }
 }
