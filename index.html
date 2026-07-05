@@ -335,6 +335,7 @@ function startListeners() {
     S.entries = s.docs.map(d => ({ id: d.id, ...d.data() }));
     render();
     attemptMatchingForMe();
+    if (isAdmin()) loadWaitingContactsForAdmin();
   }, console.warn));
 }
 
@@ -490,6 +491,17 @@ async function loadMatchContacts() {
         if (c.exists()) { S.contacts[eid] = c.data(); render(); }
       } catch (e) { /* עדיין אין הרשאה - יתעדכן ברענון */ }
     }
+  }
+}
+
+/* קריאת פרטי קשר עבור רישומים ממתינים בתור (ללא התאמה) - למנהלים בלבד */
+async function loadWaitingContactsForAdmin() {
+  for (const e of S.entries) {
+    if (e.status !== "waiting" || S.contacts[e.id]) continue;
+    try {
+      const c = await getDoc(doc(db, "entries", e.id, "private", "contact"));
+      if (c.exists()) { S.contacts[e.id] = c.data(); render(); }
+    } catch (err) { /* יתעדכן ברענון */ }
   }
 }
 
@@ -840,6 +852,24 @@ function renderAdmin(el) {
     </div>`;
   }).join("");
   if (stuck.length) html += `<p style="font-size:.85rem;color:var(--muted)">⏰ = פתוחה יותר מ-10 ימים. שווה לבדוק עם ההורים, ואם צריך - לבטל כדי שהתור ימשיך לזוז.</p>`;
+
+  const waitingEntries = S.entries.filter(e => e.status === "waiting")
+                                   .sort((a, b) => ts(a.createdAt) - ts(b.createdAt));
+  html += `<div class="section-title">ממתינים בתור (בלי התאמה) ${waitingEntries.length ? `<span class="count">${waitingEntries.length}</span>` : ""}</div>`;
+  if (!waitingEntries.length) html += `<div class="empty">אין כרגע רישומים ממתינים.</div>`;
+  else html += waitingEntries.map(e => {
+    const b = bookById(e.bookId);
+    const c = S.contacts[e.id];
+    const { pos, total } = queuePos(e);
+    return `<div class="entry-card">
+      <div class="spine-dot" style="background:${b ? gradeColor(b.grade) : "var(--line)"}"></div>
+      <div class="info">
+        <div class="t">${esc(b?.title || "ספר")} <span class="type-tag ${e.type === "offer" ? "type-offer" : "type-request"}">${e.type === "offer" ? "למסירה" : "מחפש/ת"}</span></div>
+        <div class="s">${esc(c?.name || "טוען…")}${c?.phone ? " · " + esc(c.phone) : ""} · מקום ${pos} מתוך ${total} בתור</div>
+      </div>
+      <button class="btn-danger-ghost" data-admindel="${e.id}" title="מחיקה סופית - לא חוזר לתור">מחיקה</button>
+    </div>`;
+  }).join("");
 
   html += `<div class="section-title">קטלוג הספרים</div>`;
   for (let g = 1; g <= 6; g++) {
